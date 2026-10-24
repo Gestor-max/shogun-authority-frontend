@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import axios from 'axios';
 import { useAuth } from './AuthContext';
-import { User, Mail, Lock, ShieldCheck, Save } from 'lucide-react';
+import { useLanguage } from './i18n/LanguageContext';
+import { User, Mail, Lock, ShieldCheck, Save, X, KeyRound } from 'lucide-react';
 import { API_BASE_URL } from './config';
 
 const Profile: React.FC = () => {
   const { user, token, login } = useAuth();
+  const { t } = useLanguage();
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [password, setPassword] = useState('');
@@ -18,7 +20,7 @@ const Profile: React.FC = () => {
     setMessage(null);
     
     if (password && password !== confirmPassword) {
-      setMessage({ type: 'error', text: 'Las contraseñas no coinciden' });
+      setMessage({ type: 'error', text: t.profile.passwordMismatch });
       return;
     }
 
@@ -32,136 +34,145 @@ const Profile: React.FC = () => {
       });
       
       login(token!, res.data); // Update context with new user data
-      setMessage({ type: 'success', text: '¡Perfil actualizado con éxito!' });
+      setMessage({ type: 'success', text: t.profile.profileUpdated });
       setPassword('');
       setConfirmPassword('');
     } catch (err: any) {
       console.error(err);
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Error al actualizar el perfil.' });
+      setMessage({ type: 'error', text: err.response?.data?.message || t.profile.updateError });
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="dashboard">
-      <div style={{ maxWidth: '800px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.5rem' }}>
-          <div style={{ background: 'var(--primary)', padding: '1rem', borderRadius: '1rem', color: 'white' }}>
-            <User size={32} />
+    <div style={{ width: '100%', maxWidth: '960px' }}>
+      <div style={{ marginBottom: '1.5rem' }}>
+        <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+          {t.profile.title}
+        </h2>
+        <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
+          {t.profile.subtitle}
+        </p>
+      </div>
+
+      {message && (
+        <div style={{ 
+          color: message.type === 'success' ? '#065f46' : '#991b1b', 
+          background: message.type === 'success' ? '#d1fae5' : '#fee2e2',
+          borderColor: message.type === 'success' ? '#a7f3d0' : '#fecaca',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem',
+          padding: '0.75rem 1rem',
+          borderRadius: '8px',
+          border: '1px solid',
+          marginBottom: '1.5rem',
+          fontSize: '0.875rem'
+        }}>
+          {message.type === 'success' ? <ShieldCheck size={18} /> : <X size={18} />}
+          {message.text}
+        </div>
+      )}
+
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          {/* Datos Personales Card */}
+          <div className="card" style={{ margin: 0 }}>
+            <div className="card-header">
+              <h3>
+                <User size={18} /> {t.profile.personalInfo}
+              </h3>
+            </div>
+            <div className="card-body">
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label>{t.profile.name}</label>
+                <div style={{ position: 'relative' }}>
+                  <User size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input 
+                    type="text" 
+                    value={name} 
+                    onChange={(e) => setName(e.target.value)} 
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder={t.profile.namePlaceholder} 
+                    required 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label>{t.profile.email}</label>
+                <div style={{ position: 'relative' }}>
+                  <Mail size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input 
+                    type="email" 
+                    value={email} 
+                    onChange={(e) => setEmail(e.target.value)} 
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder={t.profile.emailPlaceholder} 
+                    required 
+                  />
+                </div>
+              </div>
+            </div>
           </div>
-          <div>
-            <h1 style={{ margin: 0 }}>Perfil de Usuario</h1>
-            <p className="subtitle" style={{ margin: 0 }}>Administra tu información personal y seguridad</p>
+
+          {/* Seguridad Card */}
+          <div className="card" style={{ margin: 0 }}>
+            <div className="card-header">
+              <h3>
+                <KeyRound size={18} /> {t.profile.securitySettings}
+              </h3>
+            </div>
+            <div className="card-body">
+              <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                <label>{t.profile.newPassword}</label>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input 
+                    type="password" 
+                    value={password} 
+                    onChange={(e) => setPassword(e.target.value)} 
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder={t.profile.passwordPlaceholder} 
+                  />
+                </div>
+              </div>
+
+              <div className="form-group" style={{ marginBottom: '0.5rem' }}>
+                <label>{t.profile.confirmNewPassword}</label>
+                <div style={{ position: 'relative' }}>
+                  <Lock size={18} style={{ position: 'absolute', left: '0.85rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-secondary)' }} />
+                  <input 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={(e) => setConfirmPassword(e.target.value)} 
+                    style={{ paddingLeft: '2.5rem' }}
+                    placeholder={t.profile.passwordPlaceholder} 
+                  />
+                </div>
+              </div>
+
+              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0.5rem 0 0 0' }}>
+                {t.profile.leaveEmptyNotice}
+              </p>
+            </div>
           </div>
         </div>
 
-        {message && (
-          <div className="error-message" style={{ 
-            color: message.type === 'success' ? 'var(--success)' : 'var(--error)', 
-            background: message.type === 'success' ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
-            borderColor: message.type === 'success' ? 'rgba(34,197,94,0.2)' : 'rgba(239,68,68,0.2)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            justifyContent: 'center',
-            border: '1px solid'
-          }}>
-            {message.type === 'success' ? <ShieldCheck size={18} /> : <X size={18} />}
-            {message.text}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-          <div className="container" style={{ margin: 0, maxWidth: 'none', padding: '2rem' }}>
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <User size={20} color="var(--primary)" /> Datos Personales
-            </h3>
-            <div className="form-group">
-              <label>Nombre Completo</label>
-              <div style={{ position: 'relative' }}>
-                <User size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="text" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  style={{ paddingLeft: '3rem' }}
-                  placeholder="Tu nombre" 
-                  required 
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Correo Electrónico</label>
-              <div style={{ position: 'relative' }}>
-                <Mail size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="email" 
-                  value={email} 
-                  onChange={(e) => setEmail(e.target.value)} 
-                  style={{ paddingLeft: '3rem' }}
-                  placeholder="correo@ejemplo.com" 
-                  required 
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="container" style={{ margin: 0, maxWidth: 'none', padding: '2rem' }}>
-            <h3 style={{ marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <Lock size={20} color="var(--primary)" /> Seguridad
-            </h3>
-            <div className="form-group">
-              <label>Nueva Contraseña (Opcional)</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="password" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  style={{ paddingLeft: '3rem' }}
-                  placeholder="••••••••" 
-                />
-              </div>
-            </div>
-            <div className="form-group">
-              <label>Confirmar Contraseña</label>
-              <div style={{ position: 'relative' }}>
-                <Lock size={18} style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-                <input 
-                  type="password" 
-                  value={confirmPassword} 
-                  onChange={(e) => setConfirmPassword(e.target.value)} 
-                  style={{ paddingLeft: '3rem' }}
-                  placeholder="••••••••" 
-                />
-              </div>
-            </div>
-            <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Deja estos campos vacíos si no deseas cambiar tu contraseña.</p>
-          </div>
-
-          <div style={{ gridColumn: 'span 2' }}>
-            <button type="submit" disabled={loading} style={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              justifyContent: 'center', 
-              gap: '0.5rem',
-              opacity: loading ? 0.7 : 1
-            }}>
-              <Save size={20} /> {loading ? 'Actualizando...' : 'Guardar Cambios'}
-            </button>
-          </div>
-        </form>
-      </div>
+        <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+          <button 
+            type="submit" 
+            disabled={loading} 
+            className="btn-primary"
+            style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.5rem', opacity: loading ? 0.7 : 1 }}
+          >
+            <Save size={18} /> {loading ? t.profile.updating : t.profile.saveChanges}
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
-
-const X: React.FC<{ size?: number }> = ({ size = 20 }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18"></line>
-    <line x1="6" y1="6" x2="18" y2="18"></line>
-  </svg>
-);
 
 export default Profile;

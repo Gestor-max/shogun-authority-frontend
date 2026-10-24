@@ -16,6 +16,7 @@ import LandingPage from './LandingPage';
 import Layout from './Layout';
 import './index.css';
 import { ThemeProvider } from './ThemeContext';
+import { LanguageProvider } from './i18n/LanguageContext';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean }> = ({ children, adminOnly }) => {
   const { token, user, loading } = useAuth();
@@ -29,8 +30,9 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; adminOnly?: boolean 
 
 function App() {
   return (
-    <ThemeProvider>
-      <AuthProvider>
+    <LanguageProvider>
+      <ThemeProvider>
+        <AuthProvider>
         <Router>
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -49,6 +51,7 @@ function App() {
         </Router>
       </AuthProvider>
     </ThemeProvider>
+  </LanguageProvider>
   );
 }
 

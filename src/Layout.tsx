@@ -1,14 +1,13 @@
 import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from './AuthContext';
-import { useTheme } from './ThemeContext';
+import { useLanguage } from './i18n/LanguageContext';
+import LanguageSelector from './LanguageSelector';
 import { 
   Home, 
   Shield, 
   User, 
   LogOut, 
-  Sun, 
-  Moon, 
   Database, 
   Users, 
   CreditCard, 
@@ -22,7 +21,7 @@ import {
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
@@ -39,88 +38,129 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   return (
     <div className="layout">
-      {/* Header móvil */}
-      <div className="mobile-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#c084fc', fontWeight: 'bold' }}>
-          <Shield size={22} />
-          <span>Shogun Authority</span>
+      {/* Mobile Sticky Header */}
+      <header className="mobile-header">
+        <div className="mobile-brand">
+          <div className="brand-icon">
+            <Shield size={20} />
+          </div>
+          <span className="brand-text">Shogun<strong>Authority</strong></span>
         </div>
-        <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)}>
-          {mobileOpen ? <X size={24} /> : <Menu size={24} />}
-        </button>
-      </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+          <LanguageSelector variant="sidebar" />
+          <button 
+            className="mobile-hamburger" 
+            onClick={() => setMobileOpen(!mobileOpen)}
+            aria-label={mobileOpen ? t.nav.closeMenu : t.nav.openMenu}
+          >
+            {mobileOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+        </div>
+      </header>
 
+      {/* Backdrop Overlay on Mobile */}
+      {mobileOpen && (
+        <div 
+          className="sidebar-backdrop" 
+          onClick={closeMobileMenu}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Dark Sidebar */}
       <aside className={`sidebar ${mobileOpen ? 'open' : ''}`}>
-        <div className="sidebar-logo">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-            <Shield size={26} style={{ color: '#c084fc' }} />
-            <span>Shogun<span style={{ color: '#c084fc' }}>Authority</span></span>
+        <div className="sidebar-header">
+          <div className="sidebar-brand">
+            <div className="brand-icon">
+              <Shield size={22} />
+            </div>
+            <div className="brand-meta">
+              <span className="brand-title">Shogun<strong>Authority</strong></span>
+              <span className="brand-sub">Platform Suite</span>
+            </div>
           </div>
           <button 
-            className="mobile-menu-btn" 
-            style={{ display: mobileOpen ? 'block' : 'none' }}
-            onClick={() => setMobileOpen(false)}
+            className="sidebar-close-btn" 
+            onClick={closeMobileMenu}
+            aria-label={t.nav.closeMenu}
           >
-            <X size={20} />
+            <X size={18} />
           </button>
         </div>
 
+        <div className="sidebar-section-label">{t.nav.mainNavigation}</div>
         <nav className="sidebar-nav">
           <NavLink to="/dashboard" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-            <Home size={18} /> Dashboard
+            <Home size={18} /> <span>{t.nav.dashboard}</span>
           </NavLink>
 
           <NavLink to="/marketplace" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-            <Database size={18} /> Marketplace
+            <Database size={18} /> <span>{t.nav.marketplace}</span>
           </NavLink>
 
           <NavLink to="/orders" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-            <ShoppingBag size={18} /> {isAdmin ? 'Todos los Pedidos' : 'Mis Compras'}
+            <ShoppingBag size={18} /> <span>{isAdmin ? t.nav.ordersManagement : t.nav.myOrders}</span>
           </NavLink>
 
           {!isAdmin && (
             <NavLink to="/balance" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-              <CreditCard size={18} /> Mi Balance
+              <CreditCard size={18} /> <span>{t.nav.myBalance}</span>
             </NavLink>
           )}
 
           {isAdmin && (
             <>
+              <div className="sidebar-section-label" style={{ marginTop: '1rem' }}>{t.nav.administration}</div>
               <NavLink to="/categories" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <FolderPlus size={18} /> Categorías
+                <FolderPlus size={18} /> <span>{t.nav.categories}</span>
               </NavLink>
               <NavLink to="/users" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Users size={18} /> Usuarios
+                <Users size={18} /> <span>{t.nav.users}</span>
               </NavLink>
               <NavLink to="/transactions" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <ListOrdered size={18} /> Transacciones
+                <ListOrdered size={18} /> <span>{t.nav.transactions}</span>
               </NavLink>
               <NavLink to="/balance-requests" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-                <Clock size={18} /> Solicitudes Recarga
+                <Clock size={18} /> <span>{t.nav.balanceRequests}</span>
               </NavLink>
             </>
           )}
 
+          <div className="sidebar-section-label" style={{ marginTop: '1rem' }}>{t.nav.account}</div>
           <NavLink to="/profile" onClick={closeMobileMenu} className={({ isActive }) => `sidebar-link ${isActive ? 'active' : ''}`}>
-            <User size={18} /> Perfil
+            <User size={18} /> <span>{t.nav.profile}</span>
           </NavLink>
-
-          <button className="sidebar-link" onClick={toggleTheme} style={{ marginTop: 'auto', border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left' }}>
-            {theme === 'dark' ? (
-              <><Sun size={18} /> Modo Claro</>
-            ) : (
-              <><Moon size={18} /> Modo Oscuro</>
-            )}
-          </button>
         </nav>
 
-        <button className="sidebar-link" onClick={handleLogout} style={{ marginTop: '0.5rem', border: 'none', background: 'transparent', cursor: 'pointer', width: '100%', textAlign: 'left', color: 'var(--error)' }}>
-          <LogOut size={18} /> Cerrar Sesión
-        </button>
+        {/* Sidebar Footer: Language selector + User Profile Badge + Logout */}
+        <div className="sidebar-footer">
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.85rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--sidebar-text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              Language
+            </span>
+            <LanguageSelector variant="sidebar" />
+          </div>
+
+          <div className="user-profile-badge">
+            <div className="user-avatar">
+              {user?.name ? user.name.charAt(0).toUpperCase() : 'U'}
+            </div>
+            <div className="user-details">
+              <span className="user-name">{user?.name || t.nav.user}</span>
+              <span className="user-role">{isAdmin ? t.nav.admin : t.nav.authorizedManager}</span>
+            </div>
+          </div>
+          <button className="sidebar-logout-btn" onClick={handleLogout} title={t.nav.logout}>
+            <LogOut size={16} /> <span>{t.nav.logout}</span>
+          </button>
+        </div>
       </aside>
 
+      {/* Main Content Area (Light / Clean Gray Canvas) */}
       <main className="main-content">
-        {children}
+        <div className="main-content-inner">
+          {children}
+        </div>
       </main>
     </div>
   );

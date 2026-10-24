@@ -1,2 +1,260 @@
+import React, { useState, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { useLanguage } from './i18n/LanguageContext';
+import { CreditCard, ArrowUpRight, ArrowDownLeft, Clock, PlusCircle, X, History, DollarSign } from 'lucide-react';
 import { API_BASE_URL } from './config';
-import React, { useState, useEffect } from 'react'; import { useAuth } from './AuthContext'; import { CreditCard, ArrowUpRight, ArrowDownLeft, Clock, PlusCircle } from 'lucide-react';  const BalanceView: React.FC = () => {   const { token } = useAuth();   const [balanceData, setBalanceData] = useState<{ currentBalance: number; pendingBalance: number; transactions: any[] }>({     currentBalance: 0,     pendingBalance: 0,     transactions: [],   });   const [loading, setLoading] = useState(true);   const [error, setError] = useState('');   const [success, setSuccess] = useState('');   const [showRechargeModal, setShowRechargeModal] = useState(false);   const [rechargeAmount, setRechargeAmount] = useState('');   const [rechargeComment, setRechargeComment] = useState('');    const fetchBalance = async () => {     try {       setLoading(true);       const res = await fetch(API_BASE_URL + '/balance/my-balance', {         headers: { Authorization: `Bearer ${token}` },       });       if (!res.ok) throw new Error('Error al obtener datos de balance');       const data = await res.json();       setBalanceData(data);     } catch (err: any) {       setError(err.message);     } finally {       setLoading(false);     }   };    useEffect(() => {     if (token) fetchBalance();   }, [token]);    const handleRequestRecharge = async (e: React.FormEvent) => {     e.preventDefault();     setError(''); setSuccess('');     try {       const res = await fetch(API_BASE_URL + '/balance/recharge', {         method: 'POST',         headers: {           'Content-Type': 'application/json',           Authorization: `Bearer ${token}`,         },         body: JSON.stringify({           amount: parseFloat(rechargeAmount),           comment: rechargeComment,         }),       });       if (!res.ok) {         const errData = await res.json();         throw new Error(errData.message || 'Error al solicitar recarga');       }       setSuccess('Solicitud de recarga enviada. El administrador revisará tu recarga.');       setShowRechargeModal(false);       setRechargeAmount('');       setRechargeComment('');       fetchBalance();     } catch (err: any) {       setError(err.message);     }   };    return (     <div style={{ width: '100%', maxWidth: '1000px' }}>       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>         <div>           <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: '#5bc0be' }}>             <CreditCard size={26} /> Mi Balance y Fondos           </h2>           <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>             Consulta tu saldo disponible y gestiona solicitudes de recarga.           </p>         </div>         <button            onClick={() => setShowRechargeModal(true)}            style={{ width: 'auto' }}         >           <PlusCircle size={18} /> Solicitar Recarga de Saldo         </button>       </div>        {error && <div className="error-message">{error}</div>}       {success && <div className="success-message">{success}</div>}        <div className="dashboard-grid">         <div className="dashboard-card">           <div className="dashboard-card-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>             <ArrowUpRight size={24} />           </div>           <div>             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>               Balance Actual Disponible             </span>             <h3 style={{ margin: 0, fontSize: '1.75rem', color: '#34d399' }}>               ${balanceData.currentBalance.toFixed(2)}             </h3>           </div>         </div>          <div className="dashboard-card">           <div className="dashboard-card-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>             <Clock size={24} />           </div>           <div>             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>               Balance Pendiente de Aprobación             </span>             <h3 style={{ margin: 0, fontSize: '1.75rem', color: '#fbbf24' }}>               ${balanceData.pendingBalance.toFixed(2)}             </h3>           </div>         </div>       </div>        <h3 style={{ marginTop: '2rem', marginBottom: '1rem', fontSize: '1.1rem' }}>Historial de Movimientos</h3>       {loading ? (         <p style={{ color: 'var(--text-muted)' }}>Cargando transacciones...</p>       ) : (         <div className="table-container">           <table>             <thead>               <tr>                 <th>ID</th>                 <th>Fecha</th>                 <th>Tipo</th>                 <th>Monto</th>                 <th>Comentario</th>                 <th>Estado</th>               </tr>             </thead>             <tbody>               {balanceData.transactions.length === 0 ? (                 <tr>                   <td colSpan={6} style={{ textAlign: 'center', color: 'var(--text-muted)' }}>                     No hay transacciones registradas.                   </td>                 </tr>               ) : (                 balanceData.transactions.map((t) => (                   <tr key={t.id}>                     <td>#{t.id}</td>                     <td>{new Date(t.created_at).toLocaleDateString()} {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>                     <td>                       <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: t.type === 1 ? '#34d399' : '#fca5a5' }}>                         {t.type === 1 ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}                         {t.type === 1 ? 'Entrada (Recarga)' : 'Salida (Compra)'}                       </span>                     </td>                     <td>                       <strong style={{ color: t.type === 1 ? '#34d399' : '#fca5a5' }}>                         {t.type === 1 ? '+' : '-'}${(t.amount || 0).toFixed(2)}                       </strong>                     </td>                     <td style={{ color: 'var(--text-muted)' }}>{t.comment || '-'}</td>                     <td>                       <span className={`badge ${t.status === 1 ? 'badge-success' : t.status === 0 ? 'badge-warning' : 'badge-danger'}`}>                         {t.status === 1 ? 'Completado' : t.status === 0 ? 'Pendiente' : 'Cancelado'}                       </span>                     </td>                   </tr>                 ))               )}             </tbody>           </table>         </div>       )}        {/* Modal Solicitar Recarga */}       {showRechargeModal && (         <div className="modal-overlay">           <div className="modal-content">             <h3>Solicitar Recarga de Saldo</h3>             <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>               Ingresa el monto que deseas solicitar. Tu solicitud quedará en estado pendiente hasta que el Administrador la apruebe.             </p>             <form onSubmit={handleRequestRecharge}>               <div className="form-group">                 <label>Monto a Recargar ($ USD)</label>                 <input                    type="number"                    step="0.01"                   min="1"                   value={rechargeAmount}                   onChange={(e) => setRechargeAmount(e.target.value)}                   required                   placeholder="Ej. 100.00"                 />               </div>               <div className="form-group">                 <label>Comentario / Referencia (Opcional)</label>                 <input                    type="text"                    value={rechargeComment}                   onChange={(e) => setRechargeComment(e.target.value)}                   placeholder="Ej. Transferencia bancaria #9842"                 />               </div>               <div className="modal-actions">                 <button type="button" className="btn-secondary" onClick={() => setShowRechargeModal(false)}>                   Cancelar                 </button>                 <button type="submit">Enviar Solicitud</button>               </div>             </form>           </div>         </div>       )}     </div>   ); };  export default BalanceView;
+
+interface Transaction {
+  id: number;
+  created_at: string;
+  type: number;
+  amount: number;
+  comment?: string;
+  status: number;
+}
+
+const BalanceView: React.FC = () => {
+  const { token } = useAuth();
+  const { t } = useLanguage();
+  const [balanceData, setBalanceData] = useState<{ currentBalance: number; pendingBalance: number; transactions: Transaction[] }>({
+    currentBalance: 0,
+    pendingBalance: 0,
+    transactions: [],
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [rechargeAmount, setRechargeAmount] = useState('');
+  const [rechargeComment, setRechargeComment] = useState('');
+
+  const fetchBalance = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`${API_BASE_URL}/balance/my-balance`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error(t.common.error);
+      const data = await res.json();
+      setBalanceData(data);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (token) fetchBalance();
+  }, [token]);
+
+  const handleRequestRecharge = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(''); setSuccess('');
+    try {
+      const res = await fetch(`${API_BASE_URL}/balance/recharge`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          amount: parseFloat(rechargeAmount),
+          comment: rechargeComment,
+        }),
+      });
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || t.common.error);
+      }
+      setSuccess(t.balance.topUpSuccess);
+      setShowRechargeModal(false);
+      setRechargeAmount('');
+      setRechargeComment('');
+      fetchBalance();
+    } catch (err: any) {
+      setError(err.message);
+    }
+  };
+
+  return (
+    <div style={{ width: '100%', maxWidth: '1100px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {t.balance.title}
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
+            {t.balance.subtitle}
+          </p>
+        </div>
+        <button 
+          onClick={() => setShowRechargeModal(true)}
+          className="btn-primary"
+          style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
+        >
+          <PlusCircle size={18} /> {t.balance.requestTopUp}
+        </button>
+      </div>
+
+      {error && <div className="error-message" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {success && <div className="success-message" style={{ marginBottom: '1rem' }}>{success}</div>}
+
+      {/* KPI Stats Cards */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-card-header">
+            <span>{t.balance.currentBalance}</span>
+            <DollarSign size={16} />
+          </div>
+          <div className="stat-card-body">
+            <div>
+              <div className="stat-card-value" style={{ color: '#059669' }}>
+                ${balanceData.currentBalance.toFixed(2)}
+              </div>
+              <div className="stat-card-sub">{t.balance.fundsReady}</div>
+            </div>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-header">
+            <span>{t.balance.pendingReview}</span>
+            <Clock size={16} />
+          </div>
+          <div className="stat-card-body">
+            <div>
+              <div className="stat-card-value" style={{ color: '#d97706' }}>
+                ${balanceData.pendingBalance.toFixed(2)}
+              </div>
+              <div className="stat-card-sub">{t.balance.pendingReviewSub}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Transactions Card with Dark Navy Header */}
+      <div className="card">
+        <div className="card-header">
+          <h3>
+            <History size={18} /> {t.balance.transactionHistory}
+          </h3>
+          <span className="card-header-badge">{balanceData.transactions?.length || 0} {t.balance.movementsCount}</span>
+        </div>
+        <div className="card-body" style={{ padding: 0 }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+              {t.common.loading}
+            </div>
+          ) : (
+            <div className="table-responsive" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>ID</th>
+                    <th>{t.common.date}</th>
+                    <th>{t.common.filter}</th>
+                    <th>{t.common.amount}</th>
+                    <th>{t.balance.notesLabel}</th>
+                    <th style={{ textAlign: 'right' }}>{t.common.status}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {balanceData.transactions.length === 0 ? (
+                    <tr>
+                      <td colSpan={6} style={{ textAlign: 'center', padding: '2.5rem', color: 'var(--text-secondary)' }}>
+                        {t.balance.noTransactions}
+                      </td>
+                    </tr>
+                  ) : (
+                    balanceData.transactions.map((tr) => (
+                      <tr key={tr.id}>
+                        <td><strong>#{tr.id}</strong></td>
+                        <td style={{ fontSize: '0.8125rem', color: 'var(--text-secondary)' }}>
+                          {new Date(tr.created_at).toLocaleDateString()} {new Date(tr.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.25rem', color: tr.type === 1 ? '#059669' : '#dc2626', fontWeight: 600 }}>
+                            {tr.type === 1 ? <ArrowUpRight size={16} /> : <ArrowDownLeft size={16} />}
+                            {tr.type === 1 ? t.balance.deposit : t.balance.withdrawal}
+                          </span>
+                        </td>
+                        <td>
+                          <strong style={{ color: tr.type === 1 ? '#059669' : '#dc2626' }}>
+                            {tr.type === 1 ? '+' : '-'}${Math.abs(tr.amount || 0).toFixed(2)}
+                          </strong>
+                        </td>
+                        <td style={{ color: 'var(--text-secondary)' }}>{tr.comment || '-'}</td>
+                        <td style={{ textAlign: 'right' }}>
+                          <span className={`badge ${tr.status === 1 ? 'badge-success' : tr.status === 0 ? 'badge-warning' : 'badge-danger'}`}>
+                            {tr.status === 1 ? t.common.approved : tr.status === 0 ? t.common.pending : t.common.rejected}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modal Solicitar Recarga */}
+      {showRechargeModal && (
+        <div className="modal-overlay" onClick={() => setShowRechargeModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><CreditCard size={18} /> {t.balance.requestTopUp}</h3>
+              <button onClick={() => setShowRechargeModal(false)} className="modal-close-btn" title={t.common.close}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem' }}>
+              <p style={{ fontSize: '0.875rem', color: 'var(--text-secondary)', marginTop: 0, marginBottom: '1.25rem' }}>
+                {t.balance.modalDesc}
+              </p>
+
+              <form onSubmit={handleRequestRecharge}>
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label>{t.balance.amountToRequest}</label>
+                  <input 
+                    type="number" 
+                    step="0.01"
+                    min="1"
+                    value={rechargeAmount}
+                    onChange={(e) => setRechargeAmount(e.target.value)}
+                    required
+                    placeholder="100.00"
+                  />
+                </div>
+
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label>{t.balance.notesLabel}</label>
+                  <input 
+                    type="text"
+                    value={rechargeComment}
+                    onChange={(e) => setRechargeComment(e.target.value)}
+                    placeholder={t.balance.notesPlaceholder}
+                  />
+                </div>
+
+                <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <button type="button" className="btn-secondary" style={{ width: 'auto' }} onClick={() => setShowRechargeModal(false)}>
+                    {t.common.cancel}
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ width: 'auto' }}>
+                    {t.balance.submitRequest}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default BalanceView;

@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { Users, UserPlus, Key, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { useLanguage } from './i18n/LanguageContext';
+import { Users, UserPlus, Key, CheckCircle, XCircle, Trash2, X } from 'lucide-react';
 import { API_BASE_URL } from './config';
 
 const UsersManagement: React.FC = () => {
   const { token } = useAuth();
+  const { t } = useLanguage();
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -25,7 +27,7 @@ const UsersManagement: React.FC = () => {
       const res = await fetch(`${API_BASE_URL}/users`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Error al cargar la lista de usuarios');
+      if (!res.ok) throw new Error(t.common.error);
       const data = await res.json();
       setUsers(data);
     } catch (err: any) {
@@ -53,9 +55,9 @@ const UsersManagement: React.FC = () => {
       });
       if (!res.ok) {
         const errData = await res.json();
-        throw new Error(errData.message || 'Error al crear usuario');
+        throw new Error(errData.message || t.common.error);
       }
-      setSuccess('Usuario creado exitosamente');
+      setSuccess(t.admin.userCreatedSuccess);
       setShowCreateModal(false);
       setNewUser({ name: '', email: '', password: '', rol_id: 2, status: 1 });
       fetchUsers();
@@ -76,8 +78,9 @@ const UsersManagement: React.FC = () => {
         },
         body: JSON.stringify({ status: newStatus })
       });
-      if (!res.ok) throw new Error('Error al actualizar estado');
-      setSuccess(`Estado del usuario modificado a ${newStatus === 1 ? 'Activo' : 'Inactivo'}`);
+      if (!res.ok) throw new Error(t.common.error);
+      const statusText = newStatus === 1 ? t.admin.statusActive : t.admin.statusSuspended;
+      setSuccess(t.admin.userStatusUpdated.replace('{0}', statusText));
       fetchUsers();
     } catch (err: any) {
       setError(err.message);
@@ -95,8 +98,8 @@ const UsersManagement: React.FC = () => {
         },
         body: JSON.stringify({ rol_id })
       });
-      if (!res.ok) throw new Error('Error al actualizar rol');
-      setSuccess('Rol de usuario actualizado');
+      if (!res.ok) throw new Error(t.common.error);
+      setSuccess(t.admin.userRoleUpdated);
       fetchUsers();
     } catch (err: any) {
       setError(err.message);
@@ -116,8 +119,11 @@ const UsersManagement: React.FC = () => {
         },
         body: JSON.stringify({ password: newPassword })
       });
-      if (!res.ok) throw new Error('Error al cambiar contraseña');
-      setSuccess('Contraseña cambiada exitosamente');
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.message || t.common.error);
+      }
+      setSuccess(t.admin.passChangedSuccess);
       setShowPassModal(false);
       setNewPassword('');
       setSelectedUserId(null);
@@ -127,15 +133,15 @@ const UsersManagement: React.FC = () => {
   };
 
   const handleDeleteUser = async (id: number) => {
-    if (!window.confirm('¿Seguro que deseas eliminar este usuario?')) return;
+    if (!window.confirm(t.admin.deleteUserConfirm)) return;
     setError(''); setSuccess('');
     try {
       const res = await fetch(`${API_BASE_URL}/users/${id}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });
-      if (!res.ok) throw new Error('Error al eliminar usuario');
-      setSuccess('Usuario eliminado');
+      if (!res.ok) throw new Error(t.common.error);
+      setSuccess(t.admin.userDeletedSuccess);
       fetchUsers();
     } catch (err: any) {
       setError(err.message);
@@ -146,180 +152,218 @@ const UsersManagement: React.FC = () => {
     <div style={{ width: '100%', maxWidth: '1200px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem', marginBottom: '1.5rem' }}>
         <div>
-          <h2 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, color: '#5bc0be' }}>
-            <Users size={26} /> Gestión de Usuarios
+          <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+            {t.admin.usersTitle}
           </h2>
-          <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
-            Administración de permisos, estado, contraseñas y saldos de usuarios.
+          <p style={{ color: 'var(--text-secondary)', margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
+            {t.admin.usersSubtitle}
           </p>
         </div>
         <button 
           onClick={() => setShowCreateModal(true)} 
-          style={{ width: 'auto' }}
+          className="btn-primary"
+          style={{ width: 'auto', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
         >
-          <UserPlus size={18} /> Crear Nuevo Usuario
+          <UserPlus size={18} /> {t.admin.newUserBtn}
         </button>
       </div>
 
-      {error && <div className="error-message">{error}</div>}
-      {success && <div className="success-message">{success}</div>}
+      {error && <div className="error-message" style={{ marginBottom: '1rem' }}>{error}</div>}
+      {success && <div className="success-message" style={{ marginBottom: '1rem' }}>{success}</div>}
 
-      {loading ? (
-        <p style={{ color: 'var(--text-muted)' }}>Cargando usuarios...</p>
-      ) : (
-        <div className="table-container">
-          <table>
-            <thead>
-              <tr>
-                <th>ID</th>
-                <th>Nombre / Email</th>
-                <th>Rol</th>
-                <th>Saldo Actual</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map(u => (
-                <tr key={u.id}>
-                  <td>#{u.id}</td>
-                  <td>
-                    <strong>{u.name || 'Sin nombre'}</strong>
-                    <br />
-                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{u.email}</span>
-                  </td>
-                  <td>
-                    <select 
-                      value={u.rol_id} 
-                      onChange={(e) => handleChangeRole(u.id, Number(e.target.value))}
-                      style={{ padding: '0.25rem 0.5rem', fontSize: '0.8125rem' }}
-                    >
-                      <option value={1}>1 - Administrador</option>
-                      <option value={2}>2 - Usuario Normal</option>
-                    </select>
-                  </td>
-                  <td>
-                    <strong style={{ color: u.balance > 0 ? '#34d399' : 'var(--text)' }}>
-                      ${(u.balance || 0).toFixed(2)}
-                    </strong>
-                  </td>
-                  <td>
-                    <span className={`badge ${u.status === 1 ? 'badge-success' : 'badge-danger'}`}>
-                      {u.status === 1 ? 'Activo' : 'Denegado'}
-                    </span>
-                  </td>
-                  <td>
-                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                      <button 
-                        className={`btn-secondary ${u.status === 1 ? 'btn-danger' : 'btn-success'}`}
-                        style={{ width: 'auto', padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
-                        onClick={() => handleToggleStatus(u.id, u.status)}
-                      >
-                        {u.status === 1 ? <XCircle size={14} /> : <CheckCircle size={14} />}
-                        {u.status === 1 ? 'Denegar' : 'Permitir'}
-                      </button>
-
-                      <button 
-                        className="btn-secondary"
-                        style={{ width: 'auto', padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
-                        onClick={() => { setSelectedUserId(u.id); setShowPassModal(true); }}
-                      >
-                        <Key size={14} /> Pass
-                      </button>
-
-                      <button 
-                        className="btn-danger"
-                        style={{ width: 'auto', padding: '0.375rem 0.75rem', fontSize: '0.75rem' }}
-                        onClick={() => handleDeleteUser(u.id)}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <div className="card">
+        <div className="card-header">
+          <h3>
+            <Users size={18} /> {t.admin.userDirectoryTitle}
+          </h3>
+          <span className="card-header-badge">{users.length} {t.admin.usersCountBadge}</span>
         </div>
-      )}
+        <div className="card-body" style={{ padding: 0 }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: '3rem', color: 'var(--text-secondary)' }}>
+              {t.admin.loadingUsers}
+            </div>
+          ) : (
+            <div className="table-responsive" style={{ border: 'none', borderRadius: 0, boxShadow: 'none' }}>
+              <table>
+                <thead>
+                  <tr>
+                    <th>{t.admin.colId}</th>
+                    <th>{t.admin.colUserNameEmail}</th>
+                    <th>{t.admin.colUserRole}</th>
+                    <th>{t.admin.colUserBalance}</th>
+                    <th>{t.admin.colUserStatus}</th>
+                    <th style={{ textAlign: 'right' }}>{t.admin.colActions}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td><strong>#{u.id}</strong></td>
+                      <td>
+                        <strong style={{ color: 'var(--text-primary)' }}>{u.name || '-'}</strong>
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{u.email}</div>
+                      </td>
+                      <td>
+                        <select 
+                          value={u.rol_id} 
+                          onChange={(e) => handleChangeRole(u.id, Number(e.target.value))}
+                          style={{ width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.8125rem' }}
+                        >
+                          <option value={1}>{t.admin.roleAdminOption}</option>
+                          <option value={2}>{t.admin.roleUserOption}</option>
+                        </select>
+                      </td>
+                      <td>
+                        <strong style={{ color: (u.balance || 0) > 0 ? '#059669' : 'var(--text-secondary)' }}>
+                          ${(u.balance || 0).toFixed(2)}
+                        </strong>
+                      </td>
+                      <td>
+                        <span className={`badge ${u.status === 1 ? 'badge-success' : 'badge-danger'}`}>
+                          {u.status === 1 ? t.admin.statusActive : t.admin.statusSuspended}
+                        </span>
+                      </td>
+                      <td style={{ textAlign: 'right' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+                          <button 
+                            className={u.status === 1 ? 'btn-secondary' : 'btn-success'}
+                            style={{ width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                            onClick={() => handleToggleStatus(u.id, u.status)}
+                            title={u.status === 1 ? t.admin.suspendBtn : t.admin.activateBtn}
+                          >
+                            {u.status === 1 ? <XCircle size={13} /> : <CheckCircle size={13} />}
+                            {u.status === 1 ? t.admin.suspendBtn : t.admin.activateBtn}
+                          </button>
+
+                          <button 
+                            className="btn-secondary"
+                            style={{ width: 'auto', padding: '0.35rem 0.65rem', fontSize: '0.75rem' }}
+                            onClick={() => { setSelectedUserId(u.id); setShowPassModal(true); }}
+                            title={t.admin.passwordBtn}
+                          >
+                            <Key size={13} /> {t.admin.passwordBtn}
+                          </button>
+
+                          <button 
+                            className="btn-danger"
+                            style={{ width: 'auto', padding: '0.35rem 0.55rem', fontSize: '0.75rem' }}
+                            onClick={() => handleDeleteUser(u.id)}
+                            title={t.common.delete}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Modal Crear Usuario */}
       {showCreateModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>Crear Nuevo Usuario</h3>
-            <form onSubmit={handleCreateUser} style={{ marginTop: '1rem' }}>
-              <div className="form-group">
-                <label>Nombre Completo</label>
-                <input 
-                  type="text" 
-                  value={newUser.name} 
-                  onChange={e => setNewUser({ ...newUser, name: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Correo Electrónico</label>
-                <input 
-                  type="email" 
-                  value={newUser.email} 
-                  onChange={e => setNewUser({ ...newUser, email: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Contraseña</label>
-                <input 
-                  type="password" 
-                  value={newUser.password} 
-                  onChange={e => setNewUser({ ...newUser, password: e.target.value })}
-                  required
-                />
-              </div>
-              <div className="form-group">
-                <label>Rol de Usuario</label>
-                <select 
-                  value={newUser.rol_id} 
-                  onChange={e => setNewUser({ ...newUser, rol_id: Number(e.target.value) })}
-                >
-                  <option value={2}>Rol 2 - Usuario Normal</option>
-                  <option value={1}>Rol 1 - Administrador</option>
-                </select>
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowCreateModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit">Guardar Usuario</button>
-              </div>
-            </form>
+        <div className="modal-overlay" onClick={() => setShowCreateModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '520px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><UserPlus size={18} /> {t.admin.createUserTitle}</h3>
+              <button onClick={() => setShowCreateModal(false)} className="modal-close-btn" title={t.common.close}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem' }}>
+              <form onSubmit={handleCreateUser}>
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label>{t.admin.userFullNameLabel}</label>
+                  <input 
+                    type="text" 
+                    value={newUser.name} 
+                    onChange={e => setNewUser({ ...newUser, name: e.target.value })}
+                    required
+                    placeholder={t.admin.userFullNamePlaceholder}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label>{t.admin.userEmailLabel}</label>
+                  <input 
+                    type="email" 
+                    value={newUser.email} 
+                    onChange={e => setNewUser({ ...newUser, email: e.target.value })}
+                    required
+                    placeholder={t.admin.userEmailPlaceholder}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '1.25rem' }}>
+                  <label>{t.admin.userPassLabel}</label>
+                  <input 
+                    type="password" 
+                    value={newUser.password} 
+                    onChange={e => setNewUser({ ...newUser, password: e.target.value })}
+                    required
+                    placeholder={t.admin.userPassPlaceholder}
+                  />
+                </div>
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label>{t.admin.userRoleLabel}</label>
+                  <select 
+                    value={newUser.rol_id} 
+                    onChange={e => setNewUser({ ...newUser, rol_id: Number(e.target.value) })}
+                  >
+                    <option value={2}>{t.admin.roleUserOption}</option>
+                    <option value={1}>{t.admin.roleAdminOption}</option>
+                  </select>
+                </div>
+                <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <button type="button" className="btn-secondary" style={{ width: 'auto' }} onClick={() => setShowCreateModal(false)}>
+                    {t.common.cancel}
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ width: 'auto' }}>
+                    {t.admin.saveUserBtn}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
       {/* Modal Cambiar Password */}
       {showPassModal && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>Cambiar Contraseña de Usuario #{selectedUserId}</h3>
-            <form onSubmit={handleChangePassword} style={{ marginTop: '1rem' }}>
-              <div className="form-group">
-                <label>Nueva Contraseña</label>
-                <input 
-                  type="password" 
-                  value={newPassword} 
-                  onChange={e => setNewPassword(e.target.value)}
-                  required
-                  placeholder="Mínimo 6 caracteres"
-                />
-              </div>
-              <div className="modal-actions">
-                <button type="button" className="btn-secondary" onClick={() => setShowPassModal(false)}>
-                  Cancelar
-                </button>
-                <button type="submit">Actualizar Contraseña</button>
-              </div>
-            </form>
+        <div className="modal-overlay" onClick={() => setShowPassModal(false)}>
+          <div className="modal-content" style={{ maxWidth: '480px' }} onClick={e => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3><Key size={18} /> {t.admin.changePassModalTitle.replace('{0}', String(selectedUserId))}</h3>
+              <button onClick={() => setShowPassModal(false)} className="modal-close-btn" title={t.common.close}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <div className="modal-body" style={{ padding: '1.25rem' }}>
+              <form onSubmit={handleChangePassword}>
+                <div className="form-group" style={{ marginBottom: '1.5rem' }}>
+                  <label>{t.admin.userPassLabel}</label>
+                  <input 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)}
+                    required
+                    placeholder={t.admin.userPassPlaceholder}
+                  />
+                </div>
+                <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                  <button type="button" className="btn-secondary" style={{ width: 'auto' }} onClick={() => setShowPassModal(false)}>
+                    {t.common.cancel}
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ width: 'auto' }}>
+                    {t.admin.updatePassBtn}
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

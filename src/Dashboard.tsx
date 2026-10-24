@@ -1,11 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { Database, Globe, TrendingUp, Award, Zap, ArrowRight, Shield, CheckCircle, CreditCard, Sparkles, Star } from 'lucide-react';
+import { useLanguage } from './i18n/LanguageContext';
+import { 
+  Database, 
+  TrendingUp, 
+  Award, 
+  ArrowRight, 
+  Shield, 
+  CreditCard, 
+  ShoppingBag, 
+  Users, 
+  CheckCircle2, 
+  Layers,
+  Activity
+} from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { API_BASE_URL } from './config';
 
 const Dashboard: React.FC = () => {
   const { user, token } = useAuth();
+  const { t } = useLanguage();
   const [stats, setStats] = useState<{ totalPortals: number; activePortals: number; avgDr: number; avgDa: number }>({
     totalPortals: 0,
     activePortals: 0,
@@ -49,134 +63,282 @@ const Dashboard: React.FC = () => {
     if (token) fetchDashboardData();
   }, [token]);
 
-  const totalPortals = stats.totalPortals;
-  const activePortals = stats.activePortals;
-  const avgDr = stats.avgDr;
-  const avgDa = stats.avgDa;
-
-  if (loading) return <div style={{ padding: '2rem', color: 'var(--text-muted)' }}>Cargando Shogun Authority Suite...</div>;
+  if (loading) {
+    return (
+      <div style={{ padding: '3rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+        {t.common.loading}
+      </div>
+    );
+  }
 
   return (
-    <div style={{ width: '100%', maxWidth: '1200px' }}>
-      {/* Hero SaaS Header */}
-      <div 
-        style={{
-          background: 'linear-gradient(135deg, #1c2541 0%, #0b132b 100%)',
-          border: '1px solid var(--border)',
-          borderRadius: '8px',
-          padding: '2.5rem 2rem',
-          marginBottom: '2rem',
-          position: 'relative',
-          overflow: 'hidden',
-          boxShadow: '0 10px 30px -10px rgba(0,0,0,0.5)'
-        }}
-      >
-        <div style={{ position: 'relative', zIndex: 2, maxWidth: '750px' }}>
-          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(91, 192, 190, 0.15)', color: '#5bc0be', padding: '0.25rem 0.75rem', borderRadius: '20px', fontSize: '0.8125rem', fontWeight: 600, marginBottom: '1rem', border: '1px solid rgba(91, 192, 190, 0.3)' }}>
-            <Sparkles size={14} /> Shogun Authority Marketplace & Indexing
-          </div>
-          
-          <h1 style={{ fontSize: '2.25rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 0.75rem 0', textAlign: 'left', lineHeight: 1.2 }}>
-            Potencia tu Posicionamiento SEO con Portales de Alta Autoridad
+    <div style={{ width: '100%' }}>
+      {/* Page Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.75rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+            {t.dashboard.title}
           </h1>
-
-          <p style={{ color: 'var(--text-muted)', fontSize: '1rem', margin: '0 0 1.75rem 0', lineHeight: 1.6, textAlign: 'left' }}>
-            Acceso exclusivo a catálogo verificado de medios digitales, backlinks de alto DR y monitoreo inteligente de publicaciones indexables.
+          <p style={{ color: 'var(--text-muted)', margin: '0.25rem 0 0 0', fontSize: '0.875rem' }}>
+            {t.dashboard.description}
           </p>
+        </div>
 
-          <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap' }}>
-            <Link to="/marketplace" className="btn-success" style={{ textDecoration: 'none', width: 'auto', padding: '0.75rem 1.5rem', fontSize: '0.9375rem' }}>
-              <Database size={18} /> Explorar Portales Authority <ArrowRight size={16} />
-            </Link>
+        <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <Link to="/marketplace" className="btn btn-primary">
+            <Database size={16} /> {t.nav.marketplace}
+          </Link>
+          <Link to="/orders" className="btn btn-secondary">
+            <ShoppingBag size={16} /> {isAdmin ? t.nav.ordersManagement : t.nav.myOrders}
+          </Link>
+        </div>
+      </div>
 
-            {!isAdmin && (
-              <Link to="/balance" className="btn-secondary" style={{ textDecoration: 'none', width: 'auto', padding: '0.75rem 1.5rem', fontSize: '0.9375rem' }}>
-                <CreditCard size={18} /> Mi Saldo (${balance.currentBalance.toFixed(2)})
+      {/* KPI Stats Grid */}
+      <div className="stats-grid">
+        <div className="stat-card">
+          <div className="stat-card-header">
+            <span>{t.dashboard.totalInventory}</span>
+            <Database size={16} />
+          </div>
+          <div className="stat-card-body">
+            <div>
+              <div className="stat-card-value">{stats.totalPortals.toLocaleString()}</div>
+              <div className="stat-card-sub">{t.dashboard.catalogedSites}</div>
+            </div>
+            <span className="badge badge-info">100% {t.common.active}</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-header">
+            <span>{t.dashboard.verifiedPortals}</span>
+            <CheckCircle2 size={16} />
+          </div>
+          <div className="stat-card-body">
+            <div>
+              <div className="stat-card-value">{stats.activePortals.toLocaleString()}</div>
+              <div className="stat-card-sub">{t.dashboard.confirmedMetrics}</div>
+            </div>
+            <span className="badge badge-success">{t.dashboard.verifiedBadge}</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-header">
+            <span>{t.dashboard.avgDr}</span>
+            <Award size={16} />
+          </div>
+          <div className="stat-card-body">
+            <div>
+              <div className="stat-card-value" style={{ color: '#059669' }}>DR {stats.avgDr}</div>
+              <div className="stat-card-sub">{t.dashboard.globalDr}</div>
+            </div>
+            <span className="badge badge-success">{t.dashboard.highAuthorityBadge}</span>
+          </div>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-card-header">
+            <span>{isAdmin ? t.dashboard.systemStatus : t.dashboard.availableBalance}</span>
+            {isAdmin ? <Activity size={16} /> : <CreditCard size={16} />}
+          </div>
+          <div className="stat-card-body">
+            <div>
+              <div className="stat-card-value" style={{ color: '#2563eb' }}>
+                {isAdmin ? 'Online' : `$${balance.currentBalance.toFixed(2)}`}
+              </div>
+              <div className="stat-card-sub">
+                {isAdmin ? 'Supabase + Railway' : `${t.dashboard.pendingBalance}: $${balance.pendingBalance.toFixed(2)}`}
+              </div>
+            </div>
+            <span className="badge badge-info">{isAdmin ? 'Live' : t.common.active}</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Operational Cards Grid */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '1.5rem', marginBottom: '1.5rem' }}>
+        
+        {/* Card 1: Accesos Rápidos */}
+        <div className="card">
+          <div className="card-header">
+            <h3><Layers size={18} /> {t.dashboard.quickActions}</h3>
+            <span className="card-header-badge">{t.dashboard.operationalBadge}</span>
+          </div>
+          <div className="card-body">
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <Link 
+                to="/marketplace" 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  padding: '0.85rem 1rem', 
+                  borderRadius: 'var(--radius-sm)', 
+                  border: '1px solid var(--border-color)', 
+                  textDecoration: 'none', 
+                  color: 'var(--text-primary)',
+                  backgroundColor: '#f8fafc',
+                  transition: 'background-color 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <Database size={18} style={{ color: 'var(--primary)' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.dashboard.marketplaceLinkTitle}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.dashboard.exploreMarketplaceSub}</div>
+                  </div>
+                </div>
+                <ArrowRight size={16} style={{ color: 'var(--text-muted)' }} />
               </Link>
-            )}
+
+              <Link 
+                to="/orders" 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  padding: '0.85rem 1rem', 
+                  borderRadius: 'var(--radius-sm)', 
+                  border: '1px solid var(--border-color)', 
+                  textDecoration: 'none', 
+                  color: 'var(--text-primary)',
+                  backgroundColor: '#f8fafc',
+                  transition: 'background-color 0.15s ease'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <ShoppingBag size={18} style={{ color: '#059669' }} />
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{isAdmin ? t.dashboard.ordersLinkTitleAdmin : t.dashboard.ordersLinkTitleUser}</div>
+                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.dashboard.allOrdersSub}</div>
+                  </div>
+                </div>
+                <ArrowRight size={16} style={{ color: 'var(--text-muted)' }} />
+              </Link>
+
+              {isAdmin ? (
+                <Link 
+                  to="/users" 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    padding: '0.85rem 1rem', 
+                    borderRadius: 'var(--radius-sm)', 
+                    border: '1px solid var(--border-color)', 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    backgroundColor: '#f8fafc',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <Users size={18} style={{ color: '#d97706' }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.dashboard.usersLinkTitle}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.dashboard.manageUsersSub}</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} style={{ color: 'var(--text-muted)' }} />
+                </Link>
+              ) : (
+                <Link 
+                  to="/balance" 
+                  style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between', 
+                    padding: '0.85rem 1rem', 
+                    borderRadius: 'var(--radius-sm)', 
+                    border: '1px solid var(--border-color)', 
+                    textDecoration: 'none', 
+                    color: 'var(--text-primary)',
+                    backgroundColor: '#f8fafc',
+                    transition: 'background-color 0.15s ease'
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <CreditCard size={18} style={{ color: 'var(--primary)' }} />
+                    <div>
+                      <div style={{ fontWeight: 600, fontSize: '0.9rem' }}>{t.dashboard.balanceLinkTitle}</div>
+                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{t.dashboard.manageBalanceSub}</div>
+                    </div>
+                  </div>
+                  <ArrowRight size={16} style={{ color: 'var(--text-muted)' }} />
+                </Link>
+              )}
+            </div>
           </div>
         </div>
 
-        <Shield size={280} style={{ position: 'absolute', right: '-40px', bottom: '-40px', color: 'rgba(91, 192, 190, 0.04)', pointerEvents: 'none' }} />
+        {/* Card 2: Nichos y Especialidades */}
+        <div className="card">
+          <div className="card-header">
+            <h3><TrendingUp size={18} /> {t.dashboard.availableNichesTitle}</h3>
+            <span className="card-header-badge">{t.dashboard.activeFiltersBadge}</span>
+          </div>
+          <div className="card-body">
+            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem', lineHeight: 1.5 }}>
+              {t.dashboard.availableNichesDesc}
+            </p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Technology & SaaS</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Crypto & Web3</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Finance & Business</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>News & Media</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Health & Wellness</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Sports & Outdoor</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Gaming & Esports</span>
+              <span className="badge badge-info" style={{ padding: '0.35rem 0.65rem' }}>Lifestyle & Fashion</span>
+              <span className="badge badge-warning" style={{ padding: '0.35rem 0.65rem' }}>{t.marketplace.acceptsGambling}</span>
+              <span className="badge badge-warning" style={{ padding: '0.35rem 0.65rem' }}>{t.marketplace.acceptsCbd}</span>
+              <span className="badge badge-warning" style={{ padding: '0.35rem 0.65rem' }}>{t.marketplace.acceptsLoans}</span>
+            </div>
+            <div style={{ marginTop: '1.25rem', paddingTop: '1rem', borderTop: '1px solid var(--border-color)', fontSize: '0.8125rem', color: 'var(--text-muted)' }}>
+              {t.dashboard.englishCoverageNote}
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      {/* Metrics Dashboard */}
-      <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-        Métricas Globales de la Red
-      </h3>
-
-      <div className="dashboard-grid">
-        <div className="dashboard-card">
-          <div className="dashboard-card-icon" style={{ background: 'rgba(37, 99, 235, 0.15)', color: '#60a5fa' }}>
-            <Database size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Portales Disponibles</span>
-            <h3 style={{ margin: 0, fontSize: '1.75rem', color: 'var(--text)' }}>{totalPortals}</h3>
-          </div>
+      {/* Card 3: Resumen del Flujo de Publicación */}
+      <div className="card">
+        <div className="card-header">
+          <h3><Shield size={18} /> {t.dashboard.workflowTitle}</h3>
+          <span className="card-header-badge">{t.dashboard.operationalGuideBadge}</span>
         </div>
+        <div className="card-body">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', marginBottom: '0.25rem' }}>{t.dashboard.stepBadge} 1</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem' }}>{t.dashboard.step1Title}</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{t.dashboard.step1Desc}</div>
+            </div>
 
-        <div className="dashboard-card">
-          <div className="dashboard-card-icon" style={{ background: 'rgba(16, 185, 129, 0.15)', color: '#34d399' }}>
-            <Award size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>DR Promedio (Domain Rating)</span>
-            <h3 style={{ margin: 0, fontSize: '1.75rem', color: '#34d399' }}>DR {avgDr}</h3>
-          </div>
-        </div>
+            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#2563eb', marginBottom: '0.25rem' }}>{t.dashboard.stepBadge} 2</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem' }}>{t.dashboard.step2Title}</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{t.dashboard.step2Desc}</div>
+            </div>
 
-        <div className="dashboard-card">
-          <div className="dashboard-card-icon" style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24' }}>
-            <Zap size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>DA Promedio (Domain Authority)</span>
-            <h3 style={{ margin: 0, fontSize: '1.75rem', color: '#fbbf24' }}>DA {avgDa}</h3>
-          </div>
-        </div>
+            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.25rem' }}>{t.dashboard.stepBadge} 3</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem' }}>{t.dashboard.step3Title}</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{t.dashboard.step3Desc}</div>
+            </div>
 
-        <div className="dashboard-card">
-          <div className="dashboard-card-icon" style={{ background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc' }}>
-            <TrendingUp size={24} />
-          </div>
-          <div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 600 }}>Portales Verificados</span>
-            <h3 style={{ margin: 0, fontSize: '1.75rem', color: 'var(--text)' }}>{activePortals}</h3>
+            <div style={{ padding: '1rem', background: '#f8fafc', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#059669', marginBottom: '0.25rem' }}>{t.dashboard.stepBadge} 4</div>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.25rem' }}>{t.dashboard.step4Title}</div>
+              <div style={{ fontSize: '0.8125rem', color: 'var(--text-muted)' }}>{t.dashboard.step4Desc}</div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* SaaS Feature Cards */}
-      <h3 style={{ fontSize: '1.1rem', marginTop: '2.5rem', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)' }}>
-        Funcionalidades Destacadas
-      </h3>
-
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.25rem' }}>
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '1.5rem' }}>
-          <div style={{ color: '#5bc0be', marginBottom: '1rem' }}><Globe size={28} /></div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Marketplace de Prensa & Guest Posts</h4>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Accede a medios de alto impacto en Estados Unidos y Reino Unido, filtrando por tráfico orgánico, métricas Ahrefs/Moz y nichos permitidos.
-          </p>
-        </div>
-
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '1.5rem' }}>
-          <div style={{ color: '#34d399', marginBottom: '1rem' }}><CheckCircle size={28} /></div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Gestión de Saldo & Pedidos Rápidos</h4>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Sistema de recarga de fondos transparente. Realiza compras directas con un solo clic y sigue el progreso de tus publicaciones.
-          </p>
-        </div>
-
-        <div style={{ background: 'var(--card-bg)', border: '1px solid var(--border)', borderRadius: '6px', padding: '1.5rem' }}>
-          <div style={{ color: '#60a5fa', marginBottom: '1rem' }}><Star size={28} /></div>
-          <h4 style={{ fontSize: '1.1rem', marginBottom: '0.5rem', color: 'var(--text)' }}>Monitoreo de URLs & Indexación</h4>
-          <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', lineHeight: 1.6 }}>
-            Administra y monitorea el estado de tus enlaces publicados para asegurar la correcta indexación en motores de búsqueda.
-          </p>
-        </div>
-      </div>
     </div>
   );
 };
